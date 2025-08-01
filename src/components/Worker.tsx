@@ -13,7 +13,9 @@ export const Worker = (props: { numWorker: number }) => {
 	const [nbCalcul, setNbCalcul] = useState(0)
 	const [isCompleted, setIsCompleted] = useState(false)
 	const [foundNumbers, setFoundNumbers] = useState<number[]>([])
-	const percent = Math.round((nbCalcul / totalCalcul) * 100)
+	const percent = !isCompleted
+		? Math.round((nbCalcul / totalCalcul) * 100)
+		: 100
 	const startTime = useRef(Date.now())
 	const endTime = useRef<number | null>(null)
 
