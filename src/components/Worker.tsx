@@ -1,3 +1,4 @@
+import { type PrimitiveAtom, useAtom } from "jotai"
 import { LucideCheckCircle, LucideCpu } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Badge } from "@/components/ui/badge"
@@ -5,9 +6,13 @@ import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import type { WorkerOutput } from "@/lib/narcissic.worker"
 import NarcissicWorker from "@/lib/narcissic.worker?worker"
+import { humanizeNumber } from "@/lib/utils"
 import { Route as ResultRoute } from "@/routes/result"
 
-export const Worker = (props: { numWorker: number }) => {
+export const Worker = (props: {
+	numWorker: number
+	durationAtom: PrimitiveAtom<number>
+}) => {
 	const { maxNumber, nbWorkers } = ResultRoute.useSearch()
 	const totalCalcul = Math.ceil(maxNumber / nbWorkers)
 	const [nbCalcul, setNbCalcul] = useState(0)
@@ -18,6 +23,7 @@ export const Worker = (props: { numWorker: number }) => {
 		: 100
 	const startTime = useRef(Date.now())
 	const endTime = useRef<number | null>(null)
+	const [duration, setDuration] = useAtom(props.durationAtom)
 
 	useEffect(() => {
 		const worker = new NarcissicWorker()
@@ -33,6 +39,7 @@ export const Worker = (props: { numWorker: number }) => {
 					setIsCompleted(true)
 					worker.terminate()
 					endTime.current = Date.now()
+					setDuration(endTime.current - startTime.current)
 					break
 				}
 				case "next": {
@@ -50,7 +57,7 @@ export const Worker = (props: { numWorker: number }) => {
 		return () => {
 			worker.terminate()
 		}
-	}, [props.numWorker, nbWorkers, maxNumber])
+	}, [props.numWorker, nbWorkers, maxNumber, setDuration])
 
 	return (
 		<Card className="px-4 py-2 flex flex-col gap-y-4">
@@ -59,9 +66,7 @@ export const Worker = (props: { numWorker: number }) => {
 					<div className=" p-2 rounded-full">
 						<LucideCpu size={18} />
 					</div>
-					<span className="font-semibold text-gray-800">
-						Worker {props.numWorker + 1}
-					</span>
+					<span className="font-semibold">Worker {props.numWorker + 1}</span>
 				</div>
 				{isCompleted && (
 					<div className="flex items-center gap-1 text-green-600">
@@ -75,7 +80,7 @@ export const Worker = (props: { numWorker: number }) => {
 				<Progress value={percent} className="h-2" />
 				<div className="flex justify-between items-center">
 					<span className="text-sm">
-						{nbCalcul.toLocaleString()} / {totalCalcul.toLocaleString()}
+						{humanizeNumber(nbCalcul)} / {humanizeNumber(totalCalcul)}
 					</span>
 					<span className="text-sm font-medium">{percent}%</span>
 				</div>
@@ -84,15 +89,13 @@ export const Worker = (props: { numWorker: number }) => {
 				{foundNumbers.length > 0 &&
 					foundNumbers.map((number) => (
 						<Badge key={number} className="mr-2 mb-2">
-							{number.toLocaleString()}
+							{humanizeNumber(number)}
 						</Badge>
 					))}
 			</div>
-			{isCompleted && endTime.current && (
-				<div className="text-sm text-gray-600">
-					Temps écoulé:{" "}
-					{((endTime.current - startTime.current) / 1000).toFixed(2)}
-					secondes
+			{isCompleted && (
+				<div className="text-sm text-muted-foreground">
+					Temps écoulé: {humanizeNumber(duration)} ms
 				</div>
 			)}
 		</Card>

@@ -1,9 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import { zodValidator } from "@tanstack/zod-adapter"
-import { LucideHash, LucideUsers, LucideZap } from "lucide-react"
+import { atom, useAtomValue } from "jotai"
+import {
+	LucideChevronLeft,
+	LucideHash,
+	LucideRefreshCcw,
+	LucideUsers,
+	LucideZap,
+} from "lucide-react"
 import z from "zod"
+import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Worker } from "@/components/Worker"
+import { humanizeNumber } from "@/lib/utils"
 
 const searchSchema = z.object({
 	nbWorkers: z.number().min(1).max(navigator.hardwareConcurrency),
@@ -13,11 +22,25 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/result")({
 	component: RouteComponent,
 	validateSearch: zodValidator(searchSchema),
+	loaderDeps({ search }) {
+		return search
+	},
+	loader({ deps }) {
+		const { nbWorkers } = deps
+		const durationAtoms = Array.from({ length: nbWorkers }, () => atom(0))
+		const averageTimeAtom = atom((get) => {
+			const total = durationAtoms.reduce((sum, atom) => sum + get(atom), 0)
+			return total / nbWorkers
+		})
+		return { durationAtoms, averageTimeAtom }
+	},
 })
 
 function RouteComponent() {
+	const { durationAtoms, averageTimeAtom } = Route.useLoaderData()
 	const { maxNumber, nbWorkers } = Route.useSearch()
 	const calculParWorker = Math.ceil(maxNumber / nbWorkers)
+	const averageTime = useAtomValue(averageTimeAtom)
 
 	return (
 		<div className="container mx-auto px-4 py-8 max-w-4xl space-y-8">
@@ -45,7 +68,7 @@ function RouteComponent() {
 						<p className="font-semibold ">Nombre Maximum</p>
 					</div>
 					<span className="ml-auto text-xl font-bold ">
-						{maxNumber.toLocaleString()}
+						{humanizeNumber(maxNumber)}
 					</span>
 				</Card>
 
@@ -57,17 +80,37 @@ function RouteComponent() {
 						<p className="font-semibold ">Calculs par Worker</p>
 					</div>
 					<span className="ml-auto text-xl font-bold ">
-						{calculParWorker.toLocaleString()}
+						{humanizeNumber(calculParWorker)}
 					</span>
 				</Card>
+			</div>
+			<div className="flex items-center justify-center gap-4">
+				<Link to="/configuration" search={{ nbWorkers, maxNumber }}>
+					<Button>
+						<LucideChevronLeft size={18} />
+						Changer de Configuration
+					</Button>
+				</Link>
+				<Button onClick={() => window.location.reload()}>
+					<LucideRefreshCcw size={18} />
+					Recommencer
+				</Button>
 			</div>
 			<div>
 				<p className="text-2xl font-bold text-center">Workers</p>
 				<div className="flex flex-col gap-4">
 					{Array.from({ length: nbWorkers }, (_, i) => (
-						<Worker key={i} numWorker={i} />
+						<Worker key={i} numWorker={i} durationAtom={durationAtoms[i]} />
 					))}
 				</div>
+			</div>
+			<div>
+				<p className="text-center">
+					Temps moyen pour chaque Worker :{" "}
+					<span className="font-semibold">
+						{humanizeNumber(averageTime)} ms
+					</span>
+				</p>
 			</div>
 		</div>
 	)

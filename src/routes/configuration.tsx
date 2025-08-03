@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { zodValidator } from "@tanstack/zod-adapter"
 import { LucidePlay } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -41,16 +42,23 @@ const humnanizeNumber = (num: number) => {
 	return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "_")
 }
 
+const searchSchema = z.object({
+	nbWorkers: z.number().min(1).max(navigator.hardwareConcurrency).optional(),
+	maxNumber: z.number().min(1).optional(),
+})
+
 export const Route = createFileRoute("/configuration")({
+	validateSearch: zodValidator(searchSchema),
 	component: RouteComponent,
 })
 
 function RouteComponent() {
+	const search = Route.useSearch()
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			nbWorkers: 4,
-			maxNumber: 10_000,
+			nbWorkers: search.nbWorkers ?? 4,
+			maxNumber: search.maxNumber ?? 10_000_000,
 		},
 	})
 	const navigate = useNavigate()
