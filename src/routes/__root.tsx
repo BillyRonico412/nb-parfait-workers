@@ -9,9 +9,7 @@ function RouteComponent() {
 	return (
 		<div className="container mx-auto px-4 py-8 max-w-2xl space-y-6">
 			<nav className="flex items-center gap-4 border-b pb-4">
-				<h1 className="text-xl font-bold text-center">
-					🧪 Expérimentation Web Worker
-				</h1>
+				<h1 className="text-xl font-bold">🧪 Expérimentation Web Worker</h1>
 				<div className="ml-auto">
 					<ModeToggle />
 				</div>
