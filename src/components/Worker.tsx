@@ -1,9 +1,8 @@
 import { type PrimitiveAtom, useAtom } from "jotai"
-import { LucideCheckCircle, LucideCpu } from "lucide-react"
+import { LucideCheckCircle, LucideCpu, LucideLoader } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
 import type { WorkerOutput } from "@/lib/narcissic.worker"
 import NarcissicWorker from "@/lib/narcissic.worker?worker"
 import { humanizeNumber } from "@/lib/utils"
@@ -14,13 +13,8 @@ export const Worker = (props: {
 	durationAtom: PrimitiveAtom<number>
 }) => {
 	const { maxNumber, nbWorkers } = ResultRoute.useSearch()
-	const totalCalcul = Math.ceil(maxNumber / nbWorkers)
-	const [nbCalcul, setNbCalcul] = useState(0)
 	const [isCompleted, setIsCompleted] = useState(false)
 	const [foundNumbers, setFoundNumbers] = useState<number[]>([])
-	const percent = !isCompleted
-		? Math.round((nbCalcul / totalCalcul) * 100)
-		: 100
 	const startTime = useRef(Date.now())
 	const endTime = useRef<number | null>(null)
 	const [duration, setDuration] = useAtom(props.durationAtom)
@@ -40,11 +34,6 @@ export const Worker = (props: {
 					worker.terminate()
 					endTime.current = Date.now()
 					setDuration(endTime.current - startTime.current)
-					break
-				}
-				case "next": {
-					const value = event.data.value
-					setNbCalcul(value)
 					break
 				}
 			}
@@ -68,22 +57,17 @@ export const Worker = (props: {
 					</div>
 					<span className="font-semibold">Worker {props.numWorker + 1}</span>
 				</div>
-				{isCompleted && (
+				{isCompleted ? (
 					<div className="flex items-center gap-1 text-green-600">
 						<LucideCheckCircle size={18} />
 						<span className="text-sm font-medium">Terminé</span>
 					</div>
+				) : (
+					<div className="flex items-center gap-1 text-yellow-600">
+						<LucideLoader size={18} className="animate-spin" />
+						<span className="text-sm font-medium">En cours</span>
+					</div>
 				)}
-			</div>
-
-			<div className="space-y-2">
-				<Progress value={percent} className="h-2" />
-				<div className="flex justify-between items-center">
-					<span className="text-sm">
-						{humanizeNumber(nbCalcul)} / {humanizeNumber(totalCalcul)}
-					</span>
-					<span className="text-sm font-medium">{percent}%</span>
-				</div>
 			</div>
 			<div>
 				{foundNumbers.length > 0 &&

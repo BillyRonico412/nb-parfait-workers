@@ -22,7 +22,6 @@ export type WorkerInput = {
 self.onmessage = (event: MessageEvent<WorkerInput>) => {
 	const { numWorker, nbWorkers, maxNumber } = event.data
 	let nb = numWorker
-	let i = 0
 	if (nb === 0) {
 		nb = nbWorkers
 	}
@@ -31,10 +30,6 @@ self.onmessage = (event: MessageEvent<WorkerInput>) => {
 			self.postMessage({ type: "found", value: nb } satisfies WorkerOutput)
 		}
 		nb += nbWorkers
-		i++
-		if (i % 1000 === 0) {
-			self.postMessage({ type: "next", value: i } satisfies WorkerOutput)
-		}
 	}
 	return self.postMessage({ type: "done" } satisfies WorkerOutput)
 }
